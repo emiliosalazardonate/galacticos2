@@ -14,7 +14,7 @@ from PIL import Image
 
 def main(df):
     print ("main.......")
-    st.title('Finetuning Zoobot Software')
+    st.title('Finetuning Zoobot Software: Emilio Salazar')
     st.subheader('')
 
     st.markdown(
@@ -119,6 +119,7 @@ def interactive_galaxies(df):
         'spiral-winding': ['tight', 'medium', 'loose'],
         'merging': ['merger', 'major-disturbance', 'minor-disturbance', 'none'],
         'disk-edge-on':  ['yes', 'no'],
+        'ellipticity' :['1', '2', '3', '4']
     }
     # could make merging yes/no
 
