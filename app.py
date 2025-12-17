@@ -14,8 +14,8 @@ from PIL import Image
 
 def main(df):
     print ("main.......")
-    st.title('Baysian Deep Learning for Galaxy Zoo DECaLS')
-    st.subheader('by Mike Walmsley ([@mike\_walmsley\_](https://twitter.com/mike_walmsley_))')
+    st.title('Finetuning Zoobot Software')
+    st.subheader('')
 
     st.markdown(
         """
@@ -38,25 +38,6 @@ def main(df):
     else:
         st.markdown('---')
         interactive_galaxies(df)
-    # st.markdown('The classifier does not see color')
-
-    # header = 'some galaxy'
-    # description = 'this is a galaxy'
-    # image = np.array(Image.open('/media/walml/beta/decals/png_native/dr5/J000/J000000.80+004200.0.png'))
-
-    # st.subheader(header)
-    # st.markdown(description)
-    # st.image(image.astype(np.uint8), use_column_width=False)
-
-    # selected_tree = st.sidebar.radio(
-    #     label='Smooth or featured?',
-    #     options=['Smooth', 'Featured'],
-    #     index=1)
-
-    # # maybe just skip to featured
-    # if selected_tree == 'Smooth':
-    #     questions = ['how_rounded', 'bulge_shape']
-    # else:
 
 
 def tell_me_more():
@@ -255,6 +236,7 @@ def load_data():
     df_locs = [script_dir / f'decals_{n}.csv' for n in range(4)]
     
     dfs = [pd.read_csv(df_loc) for df_loc in df_locs]
+    print("loaded _data.......")
     return pd.concat(dfs)
 
 
@@ -262,4 +244,4 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.CRITICAL)
 
     df = load_data()
-    # main(df)
+    main(df)
