@@ -118,7 +118,7 @@ def interactive_galaxies(df):
         'spiral-arm-count': ['1', '2', '3', '4'],
         'spiral-winding': ['tight', 'medium', 'loose'],
         'merging': ['merger', 'major-disturbance', 'minor-disturbance', 'none'],
-        'disk-edge-on_yes_fraction':  ['yes', 'no'],
+        'disk-edge-on':  ['yes', 'no'],
     }
     # could make merging yes/no
 
