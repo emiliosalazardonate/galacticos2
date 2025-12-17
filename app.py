@@ -119,7 +119,7 @@ def interactive_galaxies(df):
         'spiral-winding': ['tight', 'medium', 'loose'],
         'merging': ['merger', 'major-disturbance', 'minor-disturbance', 'none'],
         'disk-edge-on':  ['yes', 'no'],
-        'ellipticity' :['1', '2', '3', '4']
+        # 'ellipticity' :['1', '2', '3', '4']
     }
     # could make merging yes/no
 
