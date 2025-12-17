@@ -2,6 +2,7 @@ import json
 import logging
 
 import streamlit as st
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -13,7 +14,7 @@ from PIL import Image
 
 def main(df):
     print ("main.......")
-    st.title('Bayesian Deep Learning for Galaxy Zoo DECaLS')
+    st.title('Baysian Deep Learning for Galaxy Zoo DECaLS')
     st.subheader('by Mike Walmsley ([@mike\_walmsley\_](https://twitter.com/mike_walmsley_))')
 
     st.markdown(
@@ -248,8 +249,11 @@ st.set_page_config(
 @st.cache
 def load_data():
     print ("load_data.......")
-
-    df_locs = ['decals_{}.csv'.format(n) for n in range(4)]
+    
+    # Get the absolute path of the directory containing this script
+    script_dir = Path(__file__).parent.absolute()
+    df_locs = [script_dir / f'decals_{n}.csv' for n in range(4)]
+    
     dfs = [pd.read_csv(df_loc) for df_loc in df_locs]
     return pd.concat(dfs)
 
