@@ -10,7 +10,7 @@ def calculate_reps(rounds, last_step):
     total_reps += sum(range(1, last_step + 1))
     return total_reps
 
-st.title("CrossFit WOD Rep Calculator")
+st.title("Crossaiyan NaviWOD Rep Calculator")
 
 st.write("""
 This app calculates the total repetitions for a specific CrossFit workout.
