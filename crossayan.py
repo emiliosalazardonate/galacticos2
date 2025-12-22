@@ -31,14 +31,14 @@ level = st.selectbox("Select your level:", ("RX", "SC", "Rookie"))
 rounds = st.number_input("Enter the number of completed rounds:", min_value=0, max_value=12, value=0, step=1)
 last_step = st.number_input("Enter the last step you finished in the current round:", min_value=0, max_value=12, value=0, step=1)
 
+csv_file = 'crossfit_results.csv'
+
 if st.button("Calculate and Save Reps"):
     if name:
         total_reps = calculate_reps(rounds, last_step)
         st.write(f"Total repetitions: {total_reps}")
 
         # --- Save to CSV ---
-        csv_file = 'crossfit_results.csv'
-        
         new_data = {
             'Name': name,
             'Level': level,
@@ -55,10 +55,19 @@ if st.button("Calculate and Save Reps"):
         df_new.to_csv(csv_file, mode='a', header=not file_exists, index=False)
 
         st.success(f"Well done, {name}! Your result has been saved.")
-
-        # --- Display Results ---
-        st.write("### All Results")
-        all_results_df = pd.read_csv(csv_file)
-        st.dataframe(all_results_df)
     else:
         st.warning("Please enter your name before saving.")
+
+# --- Display Results and Download ---
+if os.path.exists(csv_file):
+    st.write("### All Results")
+    all_results_df = pd.read_csv(csv_file)
+    st.dataframe(all_results_df)
+
+    with open(csv_file, "rb") as f:
+        st.download_button(
+            label="Download Results CSV",
+            data=f,
+            file_name="crossfit_results.csv",
+            mime="text/csv"
+        )
