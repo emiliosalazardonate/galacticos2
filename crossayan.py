@@ -1,73 +1,58 @@
 import streamlit as st
 import pandas as pd
-import os
 
-def calculate_reps(rounds, last_step):
-    total_reps = 0
-    # Calculate reps for completed rounds
-    for i in range(1, rounds + 1):
-        total_reps += sum(range(1, i + 1))
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="Hybrid Games Simulator", layout="wide")
 
-    # Add reps for the current, partially completed round
-    total_reps += sum(range(1, last_step + 1))
-    return total_reps
+# --- MOCK DATABASE (In a real app, use a CSV or SQL) ---
+if 'leaderboard' not in st.session_state:
+    st.session_state.leaderboard = pd.DataFrame([
+        {"Athlete": "Alex Rivers", "Reps": 150, "Time": "08:30", "Points": 95},
+        {"Athlete": "Jordan Smith", "Reps": 142, "Time": "09:15", "Points": 88},
+        {"Athlete": "Casey V.", "Reps": 130, "Time": "10:00", "Points": 80},
+    ])
 
-st.title("Crossaiyan NaviWOD Rep Calculator")
+# --- HEADER ---
+st.title("🏆 Workout Simulator & Ranking")
+st.markdown("Enter your results below to see where you would place in the current leaderboard.")
 
-st.write("""
-This app calculates the total repetitions for a specific CrossFit workout.
-The workout is a ladder, adding an exercise in each round with repetitions equal to the round number.
-- Round 1: 1 rep of exercise 1
-- Round 2: 1 rep of exercise 1, 2 reps of exercise 2
-- Round 3: 1 rep of exercise 1, 2 reps of exercise 2, 3 reps of exercise 3
-...and so on, up to 12 rounds.
-""")
+# --- SIDEBAR: INPUT DATA ---
+with st.sidebar:
+    st.header("Your Stats")
+    name = st.text_input("Athlete Name", placeholder="e.g. John Doe")
+    reps = st.number_input("Total Reps Completed", min_value=0, max_value=500, value=100)
+    time_min = st.slider("Time (Minutes)", 0, 20, 10)
 
-# --- User Info ---
-name = st.text_input("Enter your name:")
-level = st.selectbox("Select your level:", ("RX", "SC", "Rookie"))
+    # Simple Logic for Points (Replicating the "Simulador" logic)
+    # Higher reps = higher points.
+    simulated_points = reps * 0.5 + (20 - time_min) * 2
 
-# --- WOD Progress ---
-rounds = st.number_input("Enter the number of completed rounds:", min_value=0, max_value=12, value=0, step=1)
-last_step = st.number_input("Enter the last step you finished in the current round:", min_value=0, max_value=12, value=0, step=1)
+    if st.button("Simulate My Rank"):
+        new_entry = {"Athlete": f"{name} (YOU)", "Reps": reps, "Time": f"{time_min}:00", "Points": simulated_points}
+        # Temporary add for simulation
+        st.session_state.temp_board = pd.concat([st.session_state.leaderboard, pd.DataFrame([new_entry])])
+        st.success(f"Simulated Score: {simulated_points} pts")
 
-csv_file = 'crossfit_results.csv'
+# --- MAIN CONTENT: RANKING TABLE ---
+display_board = st.session_state.get('temp_board', st.session_state.leaderboard)
 
-if st.button("Calculate and Save Reps"):
-    if name:
-        total_reps = calculate_reps(rounds, last_step)
-        st.write(f"Total repetitions: {total_reps}")
+# Sort by Points Descending
+display_board = display_board.sort_values(by="Points", ascending=False).reset_index(drop=True)
+display_board.index += 1  # Make index start at 1 for "Rank"
 
-        # --- Save to CSV ---
-        new_data = {
-            'Name': name,
-            'Level': level,
-            'Completed Rounds': rounds,
-            'Last Step': last_step,
-            'Total Reps': total_reps
-        }
-        df_new = pd.DataFrame([new_data])
+st.subheader("Current Standings")
 
-        # Check if file exists to decide on writing headers
-        file_exists = os.path.exists(csv_file)
-        
-        # Append data to the CSV file
-        df_new.to_csv(csv_file, mode='a', header=not file_exists, index=False)
+# Styling the DataFrame
+st.dataframe(
+    display_board,
+    use_container_width=True,
+    column_config={
+        "Points": st.column_config.ProgressColumn("Score Progress", min_value=0, max_value=150),
+        "Athlete": "Competitor"
+    }
+)
 
-        st.success(f"Well done, {name}! Your result has been saved.")
-    else:
-        st.warning("Please enter your name before saving.")
-
-# --- Display Results and Download ---
-if os.path.exists(csv_file):
-    st.write("### All Results")
-    all_results_df = pd.read_csv(csv_file)
-    st.dataframe(all_results_df)
-
-    with open(csv_file, "rb") as f:
-        st.download_button(
-            label="Download Results CSV",
-            data=f,
-            file_name="crossfit_results.csv",
-            mime="text/csv"
-        )
+# --- VISUALIZATION ---
+st.divider()
+st.subheader("Performance Comparison")
+st.bar_chart(data=display_board, x="Athlete", y="Points")
