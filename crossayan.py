@@ -1,94 +1,90 @@
 import streamlit as st
 import pandas as pd
+import os
 
-st.set_page_config(page_title="Hybrid Games Simulator", layout="wide")
+# --- FILE SETUP ---
+DB_FILE = "athlete_results.csv"
 
-# --- CUSTOM CSS FOR BETTER VISUALS ---
-st.markdown("""
-    <style>
-    .metric-container {
-        background-color: #f0f2f6;
-        padding: 15px;
-        border-radius: 10px;
-        margin-bottom: 10px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
 
-st.title("🏆 Hybrid Games: Performance Simulator")
+def load_data():
+    if os.path.exists(DB_FILE):
+        return pd.read_csv(DB_FILE)
+    return pd.DataFrame(
+        columns=["Name", "Gender", "Category", "Total Lifted (kg)", "Cardio Cal", "Row Time (s)", "Final Score"])
 
-# --- SIDEBAR: ATHLETE INFO ---
+
+def save_data(new_row):
+    df = load_data()
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    df.to_csv(DB_FILE, index=False)
+
+
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="Hybrid Games Leaderboard", layout="wide")
+
+# --- SIDEBAR: ATHLETE & CATEGORY ---
 with st.sidebar:
-    st.header("User Profile")
-    name = st.text_input("Athlete Name", "Athlete 1")
-    gender = st.radio("Gender", ["Male", "Female", "Other"])
+    st.header("Registration")
+    name = st.text_input("Athlete Name")
+    gender = st.selectbox("Gender", ["Male", "Female"])
+    category = st.selectbox("Category", ["RX", "Scaled", "Masters", "Elite"])
     st.divider()
-    submit = st.button("Simulate Total Score", type="primary")
 
-# --- MAIN CONTENT: INPUT GROUPS ---
+# --- INPUT COLUMNS (Same as before) ---
 col1, col2 = st.columns(2)
-
 with col1:
-    st.subheader("🏋️ Strength Blocks")
-
-    with st.container():
-        st.markdown("**💪 Deadlift**")
-        dl_weight = st.number_input("Peso (kg)", min_value=0, max_value=500, key="dl_w")
-        dl_reps = st.number_input("Reps", min_value=0, max_value=50, key="dl_r")
-        st.caption(f"Total Volume: {dl_weight * dl_reps} kg")
-
-    st.divider()
-
-    with st.container():
-        st.markdown("**🦵 Back Squat**")
-        bs_weight = st.number_input("Peso (kg)", min_value=0, max_value=500, key="bs_w")
-        bs_reps = st.number_input("Reps", min_value=0, max_value=50, key="bs_r")
-        st.caption(f"Total Volume: {bs_weight * bs_reps} kg")
-
-    st.divider()
-
-    with st.container():
-        st.markdown("**🏋️ Shoulder Press**")
-        sp_weight = st.number_input("Peso (kg)", min_value=0, max_value=300, key="sp_w")
-        sp_reps = st.number_input("Reps", min_value=0, max_value=50, key="sp_r")
-        st.caption(f"Total Volume: {sp_weight * sp_reps} kg")
+    st.subheader("🏋️ Strength")
+    dl = st.number_input("Deadlift (kg)", 0) * st.number_input("DL Reps", 0)
+    bs = st.number_input("Back Squat (kg)", 0) * st.number_input("BS Reps", 0)
+    sp = st.number_input("Shoulder Press (kg)", 0) * st.number_input("SP Reps", 0)
+    total_strength = dl + bs + sp
 
 with col2:
-    st.subheader("🏃 Cardio Blocks")
+    st.subheader("🏃 Cardio")
+    ski = st.number_input("SkiErg Cal", 0)
+    bike = st.number_input("BikeErg Cal", 0)
+    row_m = st.number_input("Row Min", 0)
+    row_s = st.number_input("Row Seg", 0)
+    total_cardio = ski + bike
+    row_total_sec = (row_m * 60) + row_s
 
-    with st.container():
-        st.markdown("**🎿 SkiErg**")
-        ski_cal = st.number_input("Calories", min_value=0, max_value=1000, key="ski")
+# --- CALCULATE & SAVE ---
+final_score = (total_strength / 10) + (total_cardio * 2) - (row_total_sec / 10)
 
-    st.divider()
+if st.button("💾 Save Result to Leaderboard"):
+    if name:
+        new_entry = {
+            "Name": name, "Gender": gender, "Category": category,
+            "Total Lifted (kg)": total_strength, "Cardio Cal": total_cardio,
+            "Row Time (s)": row_total_sec, "Final Score": round(final_score, 2)
+        }
+        save_data(new_entry)
+        st.success(f"Result saved for {name} in {category}!")
+    else:
+        st.error("Please enter an Athlete Name.")
 
-    with st.container():
-        st.markdown("**🚴 BikeErg**")
-        bike_cal = st.number_input("Calories", min_value=0, max_value=2000, key="bike")
+# --- DISPLAY LEADERBOARD BY CATEGORY ---
+st.divider()
+st.header("📊 Official Leaderboard")
 
-    st.divider()
+data = load_data()
 
-    with st.container():
-        st.markdown("**🚣 Rowerg**")
-        r_col_a, r_col_b = st.columns(2)
-        row_min = r_col_a.number_input("Min", min_value=0, max_value=60, key="row_m")
-        row_seg = r_col_b.number_input("Seg", min_value=0, max_value=59, key="row_s")
+if not data.empty:
+    # Filter by Category
+    selected_cat = st.tabs(["All", "RX", "Scaled", "Masters", "Elite"])
 
-# --- CALCULATION LOGIC ---
-total_strength = (dl_weight * dl_reps) + (bs_weight * bs_reps) + (sp_weight * sp_reps)
-total_cardio_cals = ski_cal + bike_cal
-row_total_seconds = (row_min * 60) + row_seg
+    categories = ["All", "RX", "Scaled", "Masters", "Elite"]
 
-# --- DISPLAY RESULTS ---
-if submit:
-    st.divider()
-    res_col1, res_col2, res_col3 = st.columns(3)
+    for i, tab in enumerate(selected_cat):
+        with tab:
+            if categories[i] == "All":
+                filtered_df = data
+            else:
+                filtered_df = data[data["Category"] == categories[i]]
 
-    res_col1.metric("Total Lifted", f"{total_strength} kg")
-    res_col2.metric("Cardio Output", f"{total_cardio_cals} Cal")
-
-    # Simple score algorithm (Example: 1 point per 10kg + 5 points per cal)
-    final_score = (total_strength / 10) + (total_cardio_cals * 2) - (row_total_seconds / 10)
-    res_col3.metric("Simulated Points", round(final_score, 2))
-
-    st.balloons()
+            # Sort by Score
+            sorted_df = filtered_df.sort_values(by="Final Score", ascending=False).reset_index(drop=True)
+            sorted_df.index += 1  # Rank column
+            st.table(sorted_df)
+else:
+    st.info("No results recorded yet.")
