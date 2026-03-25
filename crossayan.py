@@ -1,58 +1,94 @@
 import streamlit as st
 import pandas as pd
 
-# --- PAGE CONFIG ---
 st.set_page_config(page_title="Hybrid Games Simulator", layout="wide")
 
-# --- MOCK DATABASE (In a real app, use a CSV or SQL) ---
-if 'leaderboard' not in st.session_state:
-    st.session_state.leaderboard = pd.DataFrame([
-        {"Athlete": "Alex Rivers", "Reps": 150, "Time": "08:30", "Points": 95},
-        {"Athlete": "Jordan Smith", "Reps": 142, "Time": "09:15", "Points": 88},
-        {"Athlete": "Casey V.", "Reps": 130, "Time": "10:00", "Points": 80},
-    ])
-
-# --- HEADER ---
-st.title("🏆 Workout Simulator & Ranking")
-st.markdown("Enter your results below to see where you would place in the current leaderboard.")
-
-# --- SIDEBAR: INPUT DATA ---
-with st.sidebar:
-    st.header("Your Stats")
-    name = st.text_input("Athlete Name", placeholder="e.g. John Doe")
-    reps = st.number_input("Total Reps Completed", min_value=0, max_value=500, value=100)
-    time_min = st.slider("Time (Minutes)", 0, 20, 10)
-
-    # Simple Logic for Points (Replicating the "Simulador" logic)
-    # Higher reps = higher points.
-    simulated_points = reps * 0.5 + (20 - time_min) * 2
-
-    if st.button("Simulate My Rank"):
-        new_entry = {"Athlete": f"{name} (YOU)", "Reps": reps, "Time": f"{time_min}:00", "Points": simulated_points}
-        # Temporary add for simulation
-        st.session_state.temp_board = pd.concat([st.session_state.leaderboard, pd.DataFrame([new_entry])])
-        st.success(f"Simulated Score: {simulated_points} pts")
-
-# --- MAIN CONTENT: RANKING TABLE ---
-display_board = st.session_state.get('temp_board', st.session_state.leaderboard)
-
-# Sort by Points Descending
-display_board = display_board.sort_values(by="Points", ascending=False).reset_index(drop=True)
-display_board.index += 1  # Make index start at 1 for "Rank"
-
-st.subheader("Current Standings")
-
-# Styling the DataFrame
-st.dataframe(
-    display_board,
-    use_container_width=True,
-    column_config={
-        "Points": st.column_config.ProgressColumn("Score Progress", min_value=0, max_value=150),
-        "Athlete": "Competitor"
+# --- CUSTOM CSS FOR BETTER VISUALS ---
+st.markdown("""
+    <style>
+    .metric-container {
+        background-color: #f0f2f6;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
     }
-)
+    </style>
+    """, unsafe_allow_html=True)
 
-# --- VISUALIZATION ---
-st.divider()
-st.subheader("Performance Comparison")
-st.bar_chart(data=display_board, x="Athlete", y="Points")
+st.title("🏆 Hybrid Games: Performance Simulator")
+
+# --- SIDEBAR: ATHLETE INFO ---
+with st.sidebar:
+    st.header("User Profile")
+    name = st.text_input("Athlete Name", "Athlete 1")
+    gender = st.radio("Gender", ["Male", "Female", "Other"])
+    st.divider()
+    submit = st.button("Simulate Total Score", type="primary")
+
+# --- MAIN CONTENT: INPUT GROUPS ---
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("🏋️ Strength Blocks")
+
+    with st.container():
+        st.markdown("**💪 Deadlift**")
+        dl_weight = st.number_input("Peso (kg)", min_value=0, max_value=500, key="dl_w")
+        dl_reps = st.number_input("Reps", min_value=0, max_value=50, key="dl_r")
+        st.caption(f"Total Volume: {dl_weight * dl_reps} kg")
+
+    st.divider()
+
+    with st.container():
+        st.markdown("**🦵 Back Squat**")
+        bs_weight = st.number_input("Peso (kg)", min_value=0, max_value=500, key="bs_w")
+        bs_reps = st.number_input("Reps", min_value=0, max_value=50, key="bs_r")
+        st.caption(f"Total Volume: {bs_weight * bs_reps} kg")
+
+    st.divider()
+
+    with st.container():
+        st.markdown("**🏋️ Shoulder Press**")
+        sp_weight = st.number_input("Peso (kg)", min_value=0, max_value=300, key="sp_w")
+        sp_reps = st.number_input("Reps", min_value=0, max_value=50, key="sp_r")
+        st.caption(f"Total Volume: {sp_weight * sp_reps} kg")
+
+with col2:
+    st.subheader("🏃 Cardio Blocks")
+
+    with st.container():
+        st.markdown("**🎿 SkiErg**")
+        ski_cal = st.number_input("Calories", min_value=0, max_value=1000, key="ski")
+
+    st.divider()
+
+    with st.container():
+        st.markdown("**🚴 BikeErg**")
+        bike_cal = st.number_input("Calories", min_value=0, max_value=2000, key="bike")
+
+    st.divider()
+
+    with st.container():
+        st.markdown("**🚣 Rowerg**")
+        r_col_a, r_col_b = st.columns(2)
+        row_min = r_col_a.number_input("Min", min_value=0, max_value=60, key="row_m")
+        row_seg = r_col_b.number_input("Seg", min_value=0, max_value=59, key="row_s")
+
+# --- CALCULATION LOGIC ---
+total_strength = (dl_weight * dl_reps) + (bs_weight * bs_reps) + (sp_weight * sp_reps)
+total_cardio_cals = ski_cal + bike_cal
+row_total_seconds = (row_min * 60) + row_seg
+
+# --- DISPLAY RESULTS ---
+if submit:
+    st.divider()
+    res_col1, res_col2, res_col3 = st.columns(3)
+
+    res_col1.metric("Total Lifted", f"{total_strength} kg")
+    res_col2.metric("Cardio Output", f"{total_cardio_cals} Cal")
+
+    # Simple score algorithm (Example: 1 point per 10kg + 5 points per cal)
+    final_score = (total_strength / 10) + (total_cardio_cals * 2) - (row_total_seconds / 10)
+    res_col3.metric("Simulated Points", round(final_score, 2))
+
+    st.balloons()
